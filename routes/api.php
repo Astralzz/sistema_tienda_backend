@@ -19,4 +19,6 @@ Route::controller(UsuarioController::class)->group(function () {
     Route::put('/tienda/usuarios/desactivar/{email}', 'desactivar')->name("desactivarUsuario");
     //Modificar usuario
     Route::put('/tienda/usuarios/modificar', 'modificar')->name("modificarUsuario");
+    //Validar key
+    Route::get('/tienda/usuarios/validar/key', 'validarKey')->name("validarKeyUsuario");
 });

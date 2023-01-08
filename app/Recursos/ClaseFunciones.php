@@ -10,39 +10,33 @@ class ClaseFunciones
 {
 
     //Creamos la ruta
-    private function crearNombreImg($nombre)
+    public static function crearIdFecha()
     {
-        //Creamos nombre
+
         //Obtenemos fecha
         $fechaActual = new DateTime();
         //Convertimos fecha a dígitos
         $fechaActual = $fechaActual->getTimestamp();
-        //creamos nombre nuevo
-        $nombreNuevo = $nombre . '_' . $fechaActual;
-
         //retornamos
-        return $nombreNuevo;
+        return $fechaActual;
     }
 
     //Insertar imagen a una ruta
-    public static function guardarImagen($imagen, $ruta, $nombreUsuario)
+    public static function guardarArchivo($file, $ruta, $nombreProvisional)
     {
-        // Primero, verificamos si el archivo subido es realmente una imagen
-        // utilizando la función getimagesize de PHP
-        $esImagen = getimagesize($imagen);
+        try {
 
-        //Éxito
-        if ($esImagen !== false) {
-            try {
-                // Almacenamos la imagen y devolvemos la ruta del archivo almacenado
-                return $imagen->storeAs($ruta, ClaseFunciones::crearNombreImg($nombreUsuario) . $imagen->extension());
-            } catch (\Exception $e) {
-                // Si ocurre algún error durante el proceso de almacenamiento, lanzamos una excepción
-                throw new \Exception('Error al guardar la imagen: ' . $e->getMessage());
-            }
-        } else {
-            // Si el archivo no es una imagen, lanzamos una excepción
-            throw new \Exception('El archivo subido no es una imagen');
+            //Extension
+            $extension = $file->getClientOriginalExtension();
+            //Id
+            $Id = ClaseFunciones::crearIdFecha();
+            //Nombre
+            $nombre = "{$nombreProvisional}_{$Id}.{$extension}";
+            // Almacenamos la imagen y devolvemos la ruta del archivo almacenado
+            return $file->storeAs($ruta, $nombre);
+        } catch (\Exception $e) {
+            // Si ocurre algún error durante el proceso de almacenamiento, lanzamos una excepción
+            throw new \Exception('Error al guardar la imagen: ' . $e->getMessage());
         }
     }
 }

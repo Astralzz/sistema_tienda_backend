@@ -41,35 +41,40 @@ class UsuarioController extends Controller
 
             // Validamos datos
             $request->validate([
-                'nombre' => 'required|string|min:2|max:255',
-                'apellidos' => 'required|string|min:2|max:255',
-                'email' => 'required|string|min:5|max:255',
+                'nombre' => 'required|string|min:2|max:60',
+                'apellido_p' => 'required|string|min:2|max:40',
+                'apellido_m' => 'required|string|min:2|max:40',
+                'email' => 'required|string|min:5|max:35',
                 'telefono' => 'required|string|min:10|max:13',
-                'password' => 'required|string|min:4',
-                'imagen' => 'image|max:2048',
-                'isGerente' => 'required|boolean',
+                'password' => 'required|string|min:5',
+                'imagen' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'isGerente' => 'required|in:true,false',
             ]);
 
             // Crear un nuevo usuario
             $usuario = new Usuario();
             $usuario->nombre = $request->nombre;
-            $usuario->apellidos = $request->apellidos;
+            $usuario->apellidos = $request->apellido_p . " " . $request->apellido_m;
             $usuario->email = $request->email;
             $usuario->telefono = $request->telefono;
             $usuario->password = Hash::make($request->password); //Encriptada
-            $usuario->isGerente = $request->isGerente;
+            $usuario->isGerente = ($request->isGerente == "true");
 
             // Se se envió una imagen
-            if ($usuario->imagen) {
+            if ($request->has('imagen')) {
 
-                // Nombre para imagen
-                $nombreImagen = preg_replace('/\s+/', '', $request->nombre . $request->apellidos);
+                // Nombre para imagen sin espacios
+                $nombreImagen = str_replace(" ", "", ($request->nombre . $request->apellido_p . $request->apellido_m));
 
                 // Ruta
-                $ruta = "public/img/usuarios";
+                $rutaGuardar = "img/usuarios";
 
                 //Guardamos imagen
-                $usuario->imagen = ClaseFunciones::guardarImagen($request->imagen, $ruta, $nombreImagen);
+                $file = $request->file("imagen");
+                $ruta = ClaseFunciones::guardarArchivo($file, $rutaGuardar, $nombreImagen);
+
+                //Guardamos en la bd
+                $usuario->imagen = $ruta;
             }
 
             // Guardamos
@@ -90,7 +95,7 @@ class UsuarioController extends Controller
             // Otro
             return response()->json([
                 'error' => 'Error desconocido, error: ' . $e->getMessage()
-            ], 500);
+            ], 501);
         }
     }
 
@@ -278,6 +283,50 @@ class UsuarioController extends Controller
             return response()->json([
                 'error' => 'Error desconocido, error: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    // Validar key
+    public function validarKey(Request $request)
+    {
+
+        try {
+
+            // Validamos datos
+            $request->validate([
+                'key' => 'required|string|min:10',
+            ]);
+
+            // Existe
+            if (env('ADMIN_KEY')) {
+
+                $adminKey = env('ADMIN_KEY');
+
+                //Correcta
+                if ($adminKey == $request->key) {
+                    return response()->json(['estado' => true]);
+                }
+            }
+
+            //Incorrecta
+            return response()->json(['estado' => false]);
+
+            // Errores
+        } catch (ValidationException $e) {
+            // Validación
+            return response()->json([
+                'error' =>  'Error en la validación, error: ' . $e->getMessage()
+            ], 400);
+        } catch (QueryException $e) {
+            // Consulta
+            return response()->json([
+                'error' => 'Error en la consulta, error: ' . $e->getMessage()
+            ], 500);
+        } catch (\Exception $e) {
+            // Otro
+            return response()->json([
+                'error' => 'Error desconocido, error: ' . $e->getMessage()
+            ], 501);
         }
     }
 }
