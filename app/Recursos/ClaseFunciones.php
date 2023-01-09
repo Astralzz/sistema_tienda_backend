@@ -32,8 +32,10 @@ class ClaseFunciones
             $Id = ClaseFunciones::crearIdFecha();
             //Nombre
             $nombre = "{$nombreProvisional}_{$Id}.{$extension}";
-            // Almacenamos la imagen y devolvemos la ruta del archivo almacenado
-            return $file->storeAs($ruta, $nombre);
+            //Disco a almacenar (carpeta publica, s3, etc, crear en config/filesystems.php )
+            $disco = "public";
+            // Almacenamos la imagen y devolvemos la ruta
+            return $file->storeAs($ruta, $nombre, $disco);
         } catch (\Exception $e) {
             // Si ocurre algún error durante el proceso de almacenamiento, lanzamos una excepción
             throw new \Exception('Error al guardar la imagen: ' . $e->getMessage());

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 // Controlador de usuarios
 class UsuarioController extends Controller
@@ -47,7 +48,7 @@ class UsuarioController extends Controller
                 'email' => 'required|string|min:5|max:35',
                 'telefono' => 'required|string|min:10|max:13',
                 'password' => 'required|string|min:5',
-                'imagen' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'imagen' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
                 'isGerente' => 'required|in:true,false',
             ]);
 
@@ -99,6 +100,71 @@ class UsuarioController extends Controller
         }
     }
 
+    //Obtener
+    public function obtener($email)
+    {
+        try {
+
+            // Validamos
+            $validar = Validator::make(['email' => $email], [
+                'email' => 'required|string|max:255'
+            ]);
+
+            //Error al validar
+            if ($validar->fails()) {
+                throw new ValidationException();
+            }
+
+            // Buscamos usuario
+            $usuario = Usuario::select(
+                'nombre',
+                'apellidos',
+                'email',
+                'telefono',
+                'isGerente',
+                'imagen'
+            )
+                ->where('email', $email)->first();
+
+            // Encontrado
+            if ($usuario) {
+
+                //Si existe
+                if ($usuario->imagen !== null) {
+                    if (Storage::exists("public/" . $usuario->imagen)) {
+                        //Obtenemos imagen
+                        $usuario->imagen = Storage::url($usuario->imagen);
+                    } else {
+                        $usuario->imagen = null;
+                    }
+                }
+
+                //Devolvemos
+                return response()->json($usuario);
+            }
+
+            // No encontrado
+            return response()->json([]);
+
+            //Errores
+        } catch (ValidationException $e) {
+            // Validación
+            return response()->json([
+                'error' =>  'Error en la validación, error: ' . $e->getMessage()
+            ], 400);
+        } catch (QueryException $e) {
+            // Consulta
+            return response()->json([
+                'error' => 'Error en la consulta, error: ' . $e->getMessage()
+            ], 500);
+        } catch (\Exception $e) {
+            // Otro
+            return response()->json([
+                'error' => 'Error desconocido, error: ' . $e->getMessage()
+            ], 501);
+        }
+    }
+
     //Buscar usuario
     public function buscar($email)
     {
@@ -129,13 +195,18 @@ class UsuarioController extends Controller
         } catch (ValidationException $e) {
             // Validación
             return response()->json([
-                'error' => 'Error en la validación, error: ' . $e->getMessage()
+                'error' =>  'Error en la validación, error: ' . $e->getMessage()
             ], 400);
+        } catch (QueryException $e) {
+            // Consulta
+            return response()->json([
+                'error' => 'Error en la consulta, error: ' . $e->getMessage()
+            ], 500);
         } catch (\Exception $e) {
             // Otro
             return response()->json([
                 'error' => 'Error desconocido, error: ' . $e->getMessage()
-            ], 500);
+            ], 501);
         }
     }
 
@@ -143,16 +214,11 @@ class UsuarioController extends Controller
     public function validar(Request $request)
     {
         try {
-            // Validamos
-            $validar = Validator::make($request, [
+            // Validamos datos
+            $request->validate([
                 'email' => 'required|string|max:255',
-                'password' => 'required|string|min:4',
+                'password' => 'required|string|min:5',
             ]);
-
-            //Error al validar
-            if ($validar->fails()) {
-                throw new ValidationException();
-            }
 
             // Buscamos usuario
             $usuario = Usuario::where('email', $request->email)->first();
@@ -173,13 +239,18 @@ class UsuarioController extends Controller
         } catch (ValidationException $e) {
             // Validación
             return response()->json([
-                'error' => 'Error en la validación, error: ' . $e->getMessage()
+                'error' =>  'Error en la validación, error: ' . $e->getMessage()
             ], 400);
+        } catch (QueryException $e) {
+            // Consulta
+            return response()->json([
+                'error' => 'Error en la consulta, error: ' . $e->getMessage()
+            ], 500);
         } catch (\Exception $e) {
             // Otro
             return response()->json([
                 'error' => 'Error desconocido, error: ' . $e->getMessage()
-            ], 500);
+            ], 501);
         }
     }
 
@@ -223,7 +294,7 @@ class UsuarioController extends Controller
         }
     }
 
-    //Validar usuarioP
+    //Validar usuario
     public function modificar(Request $request)
     {
         try {

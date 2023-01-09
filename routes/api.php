@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Route;
 Route::controller(UsuarioController::class)->group(function () {
     //Lista de usuario
     Route::get('/tienda/usuarios/lista/{desde}/{asta}', 'lista')->name("listaDeUsuarios");
+    //Obtener usuario
+    Route::get('/tienda/usuarios/obtener/{email}', 'obtener')->name("registrarUsuario");
     //Guardar usuario
     Route::post('/tienda/usuarios/guardar', 'guardar')->name("registrarUsuario");
     //Buscar usuario
