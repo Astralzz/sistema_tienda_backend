@@ -21,4 +21,15 @@ class Usuario extends Model
     {
         return $this->hasMany(Venta::class);
     }
+
+    // Valores editable
+    protected $fillable = [
+        'nombre',
+        'apellidos',
+        'email',
+        'telefono',
+        'isGerente',
+        'estado',
+        "imagen",
+    ];
 }

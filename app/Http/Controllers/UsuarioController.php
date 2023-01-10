@@ -11,6 +11,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 // Controlador de usuarios
 class UsuarioController extends Controller
@@ -18,20 +19,52 @@ class UsuarioController extends Controller
     //Lista completa
     public function lista($desde, $asta)
     {
-        // Lista de usuarios
-        return Usuario::select(
-            [
-                'nombre',
-                'apellidos',
-                'email',
-                'telefono',
-                'isGerente',
-                'estado'
-            ]
-        )
-            ->orderBy('nombre', 'asc') // orden alfabético
-            ->skip($desde)->take($asta) // desde / asta
-            ->get();
+
+        try {
+
+            // Lista de usuarios
+            $tabla = Usuario::select(
+                [
+                    'nombre',
+                    'apellidos',
+                    'email',
+                    'telefono',
+                    'isGerente',
+                    'estado',
+                    "imagen",
+                    "isGerente"
+                ]
+            )
+                ->orderBy('nombre', 'asc') // orden alfabético
+                ->skip($desde)->take($asta) // desde / asta
+                ->get();
+
+            //Recorremos
+            foreach ($tabla as $key => $usuario) {
+                //Si existe
+                if ($usuario->imagen !== null) {
+                    if (Storage::exists("public/" . $usuario->imagen)) {
+                        //Obtenemos imagen
+                        $usuario->imagen = Storage::url($usuario->imagen);
+                    }
+                }
+            }
+
+            //Retornamos
+            return $tabla;
+
+            //Errores
+        } catch (QueryException $e) {
+            // Consulta
+            return response()->json([
+                'error' => 'Error en la consulta, error: ' . $e->getMessage()
+            ], 500);
+        } catch (\Exception $e) {
+            // Otro
+            return response()->json([
+                'error' => 'Error desconocido, error: ' . $e->getMessage()
+            ], 501);
+        }
     }
 
     //Registrar
@@ -165,6 +198,72 @@ class UsuarioController extends Controller
         }
     }
 
+    //Obtener por nombre
+    public function getListaPorNombre($nombre, $no)
+    {
+        try {
+
+            // Validamos
+            $validar = Validator::make(['nombre' => $nombre], [
+                'nombre' => 'required|string|max:255'
+            ]);
+
+            //Error al validar
+            if ($validar->fails()) {
+                throw new ValidationException();
+            }
+
+            // Buscamos usuario
+            $tabla = DB::table('usuarios')
+                ->select(
+                    'nombre',
+                    'apellidos',
+                    'email',
+                    'telefono',
+                    'estado',
+                    'imagen',
+                    "isGerente"
+                )
+                ->where('nombre', 'like', '%' . $nombre . '%')
+                ->orWhere('apellidos', 'like', '%' . $nombre . '%')
+                ->orderBy('nombre', 'asc')
+                ->take($no)
+                ->get();
+
+            //Recorremos
+            foreach ($tabla as $key => $usuario) {
+                //Si existe
+                if ($usuario->imagen !== null) {
+                    if (Storage::exists("public/" . $usuario->imagen)) {
+                        //Obtenemos imagen
+                        $usuario->imagen = Storage::url($usuario->imagen);
+                    }
+                }
+            }
+
+            //Retornamos
+            return $tabla;
+
+
+            //Errores
+        } catch (ValidationException $e) {
+            // Validación
+            return response()->json([
+                'error' =>  'Error en la validación, error: ' . $e->getMessage()
+            ], 400);
+        } catch (QueryException $e) {
+            // Consulta
+            return response()->json([
+                'error' => 'Error en la consulta, error: ' . $e->getMessage()
+            ], 500);
+        } catch (\Exception $e) {
+            // Otro
+            return response()->json([
+                'error' => 'Error desconocido, error: ' . $e->getMessage()
+            ], 501);
+        }
+    }
+
     //Buscar usuario
     public function buscar($email)
     {
@@ -225,10 +324,13 @@ class UsuarioController extends Controller
 
             // Encontrado
             if ($usuario) {
-                //Verificamos contraseña
-                if (Hash::check($request->password, $usuario->password)) {
-                    // Éxito
-                    return response()->json(['estado' => true]);
+                //Si esta activado
+                if ($usuario->estado == 1) {
+                    //Verificamos contraseña
+                    if (Hash::check($request->password, $usuario->password)) {
+                        // Éxito
+                        return response()->json(['estado' => true]);
+                    }
                 }
             }
 
@@ -275,6 +377,7 @@ class UsuarioController extends Controller
             if ($usuario) {
                 // Cambiamos
                 $usuario->update(['estado' => !$usuario->estado]);
+                return;
             }
 
             // No encontrado
@@ -284,76 +387,117 @@ class UsuarioController extends Controller
         } catch (ValidationException $e) {
             // Validación
             return response()->json([
-                'error' => 'Error en la validación, error: ' . $e->getMessage()
+                'error' =>  'Error en la validación, error: ' . $e->getMessage()
             ], 400);
+        } catch (QueryException $e) {
+            // Consulta
+            return response()->json([
+                'error' => 'Error en la consulta, error: ' . $e->getMessage()
+            ], 500);
         } catch (\Exception $e) {
             // Otro
             return response()->json([
                 'error' => 'Error desconocido, error: ' . $e->getMessage()
-            ], 500);
+            ], 501);
         }
     }
 
-    //Validar usuario
+    //Modificar usuario
     public function modificar(Request $request)
     {
+
+        // $data = $request->all();
+        // $dd = "Lo que esta llegando es: \n";
+        // foreach ($data as $key => $value) {
+        //     $dd .= $key . ": " . $value . "\n";
+        // }
+
         try {
-            // Validamos
-            $validar = Validator::make($request, [
-                'nombre' => 'required|string|min:2|max:255',
-                'apellidos' => 'required|string|min:2|max:255',
-                'email' => 'required|string|min:5|max:255',
-                'newEmail' => 'string|min:4',
+
+            // Validamos datos
+            $request->validate([
+                'nombre' => 'required|string|min:2|max:60',
+                'apellidos' => 'required|string|min:2|max:80',
+                'email' => 'required|string|min:5|max:35',
+                'oldEmail' => 'required|string|min:5|max:35',
                 'telefono' => 'required|string|min:10|max:13',
-                'password' => 'required|string|min:4',
-                'newPassword' => 'string|min:4',
+                'password' => 'nullable|string|min:5',
+                'imagen' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
             ]);
 
-            //Error al validar
-            if ($validar->fails()) {
-                throw new ValidationException();
-            }
-
             // Buscamos usuario
-            $usuario = Usuario::where('email', $request->email)->first();
+            $usuario = Usuario::where('email', $request->oldEmail)->first();
 
             // Encontrado
             if ($usuario) {
-                //Verificamos contraseña
-                if (Hash::check($request->password, $usuario->password)) {
-                    // Guardamos
-                    $usuario->nombre = $request->nombre;
-                    $usuario->apellidos = $request->apellidos;
-                    $usuario->telefono = $request->telefono;
+                // Guardamos
+                $usuario->nombre = $request->nombre;
+                $usuario->apellidos = $request->apellidos;
+                $usuario->telefono = $request->telefono;
+                $usuario->email = $request->email;
 
-                    // Email
-                    if ($request->newEmail) {
-                        $usuario->password = $request->newEmail;
-                    }
+                // //Si se envió una password
+                // if ($request->has('password')) {
+                //     $usuario->password = Hash::make($request->password); //Encriptada
+                // }
 
-                    // Contraseña
-                    if ($request->newPassword) {
-                        $usuario->password = Hash::make($request->newPassword); //Encriptada
-                    }
+                // //Si se envió una imagen
+                // if ($request->has('imagen')) {
 
-                    $usuario->save();
-                }
+
+                //     $rutaAntigua = null;
+                //     //Si el usuario ya tenia una imagen
+                //     if ($usuario->imagen !== null) {
+                //         if (Storage::exists("public/" . $usuario->imagen)) {
+                //             //Obtenemos ruta
+                //             $rutaAntigua = $usuario->imagen;
+                //         }
+                //     }
+
+                //     // Nombre para la nueva imagen
+                //     $nombreImagen = str_replace(" ", "", ($request->nombre . $request->apellidos));
+
+                //     // Ruta
+                //     $rutaGuardar = "img/usuarios";
+
+                //     //Guardamos imagen
+                //     $file = $request->file("imagen");
+                //     $ruta = ClaseFunciones::guardarArchivo($file, $rutaGuardar, $nombreImagen);
+
+                //     //nueva ruta
+                //     $usuario->imagen = $ruta;
+
+                //     //Eliminamos
+                //     if ($rutaAntigua !== null) {
+                //         // eliminamos antigua imagen
+                //         Storage::delete("public/" . $rutaAntigua);
+                //     }
+                // }
+
+                //guardamos
+                $usuario->save();
             }
 
+
             // No encontrado
-            throw new Exception();
+            //throw new Exception();
 
             //Errores
         } catch (ValidationException $e) {
             // Validación
             return response()->json([
-                'error' => 'Error en la validación, error: ' . $e->getMessage()
+                'error' =>  'Error en la validación, error: ' . $e->getMessage()
             ], 400);
+        } catch (QueryException $e) {
+            // Consulta
+            return response()->json([
+                'error' => 'Error en la consulta, error: ' . $e->getMessage()
+            ], 500);
         } catch (\Exception $e) {
             // Otro
             return response()->json([
                 'error' => 'Error desconocido, error: ' . $e->getMessage()
-            ], 500);
+            ], 503);
         }
     }
 
@@ -393,6 +537,19 @@ class UsuarioController extends Controller
             return response()->json([
                 'error' => 'Error en la consulta, error: ' . $e->getMessage()
             ], 500);
+        } catch (\Exception $e) {
+            // Otro
+            return response()->json([
+                'error' => 'Error desconocido, error: ' . $e->getMessage()
+            ], 501);
+        }
+    }
+
+    // Obtener el numero de filas
+    public function noDeFilas()
+    {
+        try {
+            return Usuario::count();
         } catch (\Exception $e) {
             // Otro
             return response()->json([

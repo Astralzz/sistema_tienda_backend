@@ -23,4 +23,8 @@ Route::controller(UsuarioController::class)->group(function () {
     Route::put('/tienda/usuarios/modificar', 'modificar')->name("modificarUsuario");
     //Validar key
     Route::get('/tienda/usuarios/validar/key', 'validarKey')->name("validarKeyUsuario");
+    //Buscar usuario por nombre
+    Route::get('/tienda/usuarios/buscar/nombre/{nombre}/{no}', 'getListaPorNombre')->name("getListaPorNombreUsuarios");
+    // Obtener numero de filas
+    Route::get('/tienda/usuarios/buscar/filas', 'noDeFilas')->name("getNoDeFilasUsuario");
 });
