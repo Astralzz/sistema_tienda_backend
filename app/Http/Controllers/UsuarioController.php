@@ -81,7 +81,7 @@ class UsuarioController extends Controller
                 'email' => 'required|string|min:5|max:35',
                 'telefono' => 'required|string|min:10|max:13',
                 'password' => 'required|string|min:5',
-                'imagen' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+                'imagen' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,jfif|max:2048',
                 'isGerente' => 'required|in:true,false',
             ]);
 
@@ -150,6 +150,7 @@ class UsuarioController extends Controller
 
             // Buscamos usuario
             $usuario = Usuario::select(
+                'id',
                 'nombre',
                 'apellidos',
                 'email',
@@ -546,7 +547,7 @@ class UsuarioController extends Controller
     }
 
     // Obtener el numero de filas
-    public function noDeFilas()
+    public function getFilas()
     {
         try {
             return Usuario::count();
