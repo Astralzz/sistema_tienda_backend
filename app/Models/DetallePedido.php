@@ -9,17 +9,22 @@ class DetallePedido extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'cantidad', 'id_producto', 'descripcion'
+    ];
+
     //Pertenece al pedido
     public function pedido()
     {
         //Pertenece a
         return $this->belongsTo(Pedido::class);
+        // return $this->belongsTo(Pedido::class, 'id_pedido');
     }
 
-    //Pertenece al producto
-    public function producto()
-    {
-        //Pertenece a
-        return $this->belongsTo(Producto::class);
-    }
+    // //Pertenece al producto
+    // public function producto()
+    // {
+    //     //Pertenece a
+    //     return $this->belongsTo(Producto::class);
+    // }
 }

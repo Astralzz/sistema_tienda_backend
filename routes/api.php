@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\ProductoController;
+use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\UsuarioController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -82,4 +84,57 @@ Route::controller(ProductoController::class)->group(function () {
     Route::get('/tienda/productos/buscar/nombre/{nombre}/{no}', 'getListaPorNombre')->name("getListaPorNombreProducto");
     // Obtener numero de filas
     Route::get('/tienda/productos/buscar/no/filas', 'getFilas')->name("getNoDeFilasProducto");
+});
+
+
+
+//Proveedores
+Route::controller(ProveedorController::class)->group(function () {
+    //Lista de proveedores
+    Route::get('/tienda/proveedores/lista/{desde}/{asta}', 'lista')->name("listaDeProveedores");
+    // //Obtener usuario
+    // Route::get('/tienda/proveedores/obtener/{email}', 'obtener')->name("registrarProveedor");
+    //Guardar proveedor
+    Route::post('/tienda/proveedores/guardar', 'guardar')->name("registrarProveedor");
+    //Eliminar proveedor
+    Route::delete('/tienda/proveedores/eliminar/{id}', 'eliminar')->name("eliminarProducto");
+    // //Buscar usuario
+    // Route::get('/tienda/proveedores/buscar/{email}', 'buscar')->name("buscarProveedorPorEmail");
+    // //Versificar usuario y credenciales
+    // Route::post('/tienda/proveedores/validar', 'validar')->name("verificarProveedor");
+    // //Desactivar usuario
+    // Route::put('/tienda/proveedores/desactivar/{email}', 'desactivar')->name("desactivarProveedor");
+    // //Modificar usuario
+    // Route::put('/tienda/proveedores/modificar', 'modificar')->name("modificarProveedor");
+    // //Validar key
+    // Route::get('/tienda/proveedores/validar/key', 'validarKey')->name("validarKeyProveedor");
+    //Buscar proveedor por nombre
+    Route::get('/tienda/proveedores/buscar/nombre/{nombre}/{no}', 'getListaPorNombre')->name("getListaPorNombreProveedores");
+    // Obtener numero de filas
+    Route::get('/tienda/proveedores/buscar/no/filas', 'getFilas')->name("getNoDeFilasProveedor");
+});
+
+
+//Pedidos
+Route::controller(PedidoController::class)->group(function () {
+    // //Lista de pedido
+    // Route::get('/tienda/pedidos/lista/{desde}/{asta}', 'lista')->name("listaDePedidos");
+    // //Obtener pedido
+    // Route::get('/tienda/pedidos/obtener/{email}', 'obtener')->name("registrarPedido");
+    //Guardar pedido
+    Route::post('/tienda/pedidos/guardar', 'guardar')->name("registrarPedido");
+    // //Buscar pedido
+    // Route::get('/tienda/pedidos/buscar/{email}', 'buscar')->name("buscarPedidoPorEmail");
+    // //Versificar pedido y credenciales
+    // Route::post('/tienda/pedidos/validar', 'validar')->name("verificarPedido");
+    // //Desactivar pedido
+    // Route::put('/tienda/pedidos/desactivar/{email}', 'desactivar')->name("desactivarPedido");
+    // //Modificar pedido
+    // Route::put('/tienda/pedidos/modificar', 'modificar')->name("modificarPedido");
+    // //Validar key
+    // Route::get('/tienda/pedidos/validar/key', 'validarKey')->name("validarKeyPedido");
+    // //Buscar pedido por nombre
+    // Route::get('/tienda/pedidos/buscar/nombre/{nombre}/{no}', 'getListaPorNombre')->name("getListaPorNombrePedidos");
+    // // Obtener numero de filas
+    // Route::get('/tienda/pedidos/buscar/no/filas', 'getFilas')->name("getNoDeFilasPedido");
 });

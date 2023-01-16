@@ -86,11 +86,12 @@ class ProductoController extends Controller
                 throw new ValidationException();
             }
 
-            // Buscamos usuario
+            // Buscamos producto
             $tabla = DB::table('productos')
                 ->select(
                     'id',
                     'nombre',
+                    "precio"
                 )
                 ->where('nombre', 'like', '%' . $nombre . '%')
                 ->orderBy('nombre', 'asc')
