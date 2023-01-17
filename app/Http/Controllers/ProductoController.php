@@ -91,7 +91,8 @@ class ProductoController extends Controller
                 ->select(
                     'id',
                     'nombre',
-                    "precio"
+                    "precio",
+                    'cantidad'
                 )
                 ->where('nombre', 'like', '%' . $nombre . '%')
                 ->orderBy('nombre', 'asc')

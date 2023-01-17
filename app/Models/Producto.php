@@ -9,6 +9,10 @@ class Producto extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'cantidad',
+    ];
+
     // Pertenece a la categoría
     public function category()
     {

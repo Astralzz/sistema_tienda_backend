@@ -10,7 +10,7 @@ class Pedido extends Model
     use HasFactory;
 
     protected $fillable = [
-        'fecha', 'id_usuario', 'id_proveedor', 'total'
+        'fecha', 'id_usuario', 'id_proveedor', 'total', 'estado'
     ];
 
 

@@ -4,9 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\DetallePedido;
 use App\Models\Pedido;
+use App\Models\Producto;
+use App\Models\Proveedor;
+use App\Models\Usuario;
 use Dotenv\Exception\ValidationException;
+use Exception;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class PedidoController extends Controller
 {
@@ -14,38 +20,49 @@ class PedidoController extends Controller
     public function lista($desde, $asta)
     {
 
-        // try {
+        try {
 
-        //     // Lista de usuarios
-        //     $tabla = Pedido::select(
-        //         [
-        //             'id',
-        //             'nombre',
-        //             'email',
-        //             'telefono',
-        //             'direccion',
-        //             'empresa',
-        //         ]
-        //     )
-        //         ->orderBy('nombre', 'asc') // orden alfabético
-        //         ->skip($desde)->take($asta) // desde / asta
-        //         ->get();
+            // Lista de usuarios
+            $tabla = Pedido::select(
+                [
+                    'id',
+                    'fecha',
+                    'id_proveedor',
+                    'id_usuario',
+                    'estado',
+                    'total',
+                ]
+            )
+                ->orderBy('fecha', 'asc') // orden alfabético
+                ->skip($desde)->take($asta) // desde / asta
+                ->with(['detalles'])
+                ->get();
 
-        //     //Retornamos
-        //     return $tabla;
+            //Recorremos
+            foreach ($tabla as $value) {
+                $value->detalle_no = count($value->detalles);
+                $value->proveedor = Proveedor::select('nombre')->find($value->id_proveedor);
+                $value->usuario = Usuario::select('nombre', 'apellidos')->find($value->id_usuario);
+                $value->detalles->map(function ($detalle) {
+                    $detalle->producto = Producto::select('nombre')->find($detalle->id_producto);
+                });
+            }
 
-        //     //Errores
-        // } catch (QueryException $e) {
-        //     // Consulta
-        //     return response()->json([
-        //         'error' => 'Error en la consulta, error: ' . $e->getMessage()
-        //     ], 500);
-        // } catch (\Exception $e) {
-        //     // Otro
-        //     return response()->json([
-        //         'error' => 'Error desconocido, error: ' . $e->getMessage()
-        //     ], 501);
-        // }
+            //Retornamos
+            return $tabla;
+
+            //Errores
+        } catch (QueryException $e) {
+            // Consulta
+            return response()->json([
+                'error' => 'Error en la consulta, error: ' . $e->getMessage()
+            ], 500);
+        } catch (\Exception $e) {
+            // Otro
+            return response()->json([
+                'error' => 'Error desconocido, error: ' . $e->getMessage()
+            ], 501);
+        }
     }
 
     //Registrar
@@ -116,114 +133,184 @@ class PedidoController extends Controller
     }
 
     //Obtener por nombre
-    public function getListaPorNombre($nombre, $no)
+    public function getListaPorNombre($fecha, $no)
     {
-        // try {
+        try {
 
-        //     // Validamos
-        //     $validar = Validator::make(['nombre' => $nombre], [
-        //         'nombre' => 'required|string|max:255'
-        //     ]);
+            // Validamos
+            $validar = Validator::make(['fecha' => $fecha], [
+                'fecha' => 'required|date'
+            ]);
 
-        //     //Error al validar
-        //     if ($validar->fails()) {
-        //         throw new ValidationException();
-        //     }
+            //Error al validar
+            if ($validar->fails()) {
+                throw new ValidationException();
+            }
 
-        //     // Buscamos usuario
-        //     $tabla = DB::table('pedidoes')
-        //         ->select(
-        //             'id',
-        //             'nombre',
-        //             'email',
-        //             'telefono',
-        //             'direccion',
-        //             'empresa',
-        //         )
-        //         ->where('nombre', 'like', '%' . $nombre . '%')
-        //         ->orderBy('nombre', 'asc')
-        //         ->take($no)
-        //         ->get();
+            // Buscamos usuario
+            $tabla = Pedido::select(
+                'id',
+                'fecha',
+                'id_proveedor',
+                'id_usuario',
+                'estado',
+                'total',
+            )
+                ->whereDate('fecha', '=', $fecha)
+                ->orderBy('fecha', 'asc')
+                ->take($no)
+                ->with(['detalles'])
+                ->get();
 
-        //     //Retornamos
-        //     return $tabla;
+            //Recorremos
+            foreach ($tabla as $value) {
+                $value->detalle_no = count($value->detalles);
+                $value->proveedor = Proveedor::select('nombre')->find($value->id_proveedor);
+                $value->usuario = Usuario::select('nombre', 'apellidos')->find($value->id_usuario);
+                $value->detalles->map(function ($detalle) {
+                    $detalle->producto = Producto::select('nombre')->find($detalle->id_producto);
+                });
+            }
+            //Retornamos
+            return $tabla;
 
 
-        //     //Errores
-        // } catch (ValidationException $e) {
-        //     // Validación
-        //     return response()->json([
-        //         'error' =>  'Error en la validación, error: ' . $e->getMessage()
-        //     ], 400);
-        // } catch (QueryException $e) {
-        //     // Consulta
-        //     return response()->json([
-        //         'error' => 'Error en la consulta, error: ' . $e->getMessage()
-        //     ], 500);
-        // } catch (\Exception $e) {
-        //     // Otro
-        //     return response()->json([
-        //         'error' => 'Error desconocido, error: ' . $e->getMessage()
-        //     ], 501);
-        // }
+            //Errores
+        } catch (ValidationException $e) {
+            // Validación
+            return response()->json([
+                'error' =>  'Error en la validación, error: ' . $e->getMessage()
+            ], 400);
+        } catch (QueryException $e) {
+            // Consulta
+            return response()->json([
+                'error' => 'Error en la consulta, error: ' . $e->getMessage()
+            ], 500);
+        } catch (\Exception $e) {
+            // Otro
+            return response()->json([
+                'error' => 'Error desconocido, error: ' . $e->getMessage()
+            ], 501);
+        }
     }
 
     // Obtener el numero de filas
     public function getFilas()
     {
-        // try {
-        //     return Pedido::count();
-        // } catch (\Exception $e) {
-        //     // Otro
-        //     return response()->json([
-        //         'error' => 'Error desconocido, error: ' . $e->getMessage()
-        //     ], 501);
-        // }
+        try {
+            return Pedido::count();
+        } catch (\Exception $e) {
+            // Otro
+            return response()->json([
+                'error' => 'Error desconocido, error: ' . $e->getMessage()
+            ], 501);
+        }
     }
 
     //Eliminar
     public function eliminar($id)
     {
-        // try {
-        //     // Validamos
-        //     $validar = Validator::make(['id' => $id], [
-        //         'id' => 'required|numeric',
-        //     ]);
+        try {
+            // Validamos
+            $validar = Validator::make(['id' => $id], [
+                'id' => 'required|numeric',
+            ]);
 
-        //     //Error al validar
-        //     if ($validar->fails()) {
-        //         throw new ValidationException();
-        //     }
+            //Error al validar
+            if ($validar->fails()) {
+                throw new ValidationException();
+            }
 
-        //     // Buscamos
-        //     $producto = Pedido::where('id', $id)->first();
+            // Buscamos
+            $pedido = Pedido::where('id', $id)->first();
 
-        //     // Encontrado
-        //     if ($producto) {
-        //         // eliminamos
-        //         $producto->forceDelete();
-        //         return;
-        //     }
+            // Encontrado
+            if ($pedido) {
+                // eliminamos
+                $pedido->forceDelete();
+                return;
+            }
 
-        //     // No encontrado
-        //     throw new Exception();
+            // No encontrado
+            throw new Exception();
 
-        //     //Errores
-        // } catch (ValidationException $e) {
-        //     // Validación
-        //     return response()->json([
-        //         'error' =>  'Error en la validación, error: ' . $e->getMessage()
-        //     ], 400);
-        // } catch (QueryException $e) {
-        //     // Consulta
-        //     return response()->json([
-        //         'error' => 'Error en la consulta, error: ' . $e->getMessage()
-        //     ], 500);
-        // } catch (\Exception $e) {
-        //     // Otro
-        //     return response()->json([
-        //         'error' => 'Error desconocido, error: ' . $e->getMessage()
-        //     ], 501);
-        // }
+            //Errores
+        } catch (ValidationException $e) {
+            // Validación
+            return response()->json([
+                'error' =>  'Error en la validación, error: ' . $e->getMessage()
+            ], 400);
+        } catch (QueryException $e) {
+            // Consulta
+            return response()->json([
+                'error' => 'Error en la consulta, error: ' . $e->getMessage()
+            ], 500);
+        } catch (\Exception $e) {
+            // Otro
+            return response()->json([
+                'error' => 'Error desconocido, error: ' . $e->getMessage()
+            ], 501);
+        }
+    }
+
+    //Eliminar
+    public function completar($id, $id_producto, $cantidad)
+    {
+        try {
+            // Validamos
+            $validar = Validator::make(
+                [
+                    'id' => $id,
+                    'id_producto' => $id_producto,
+                    'cantidad' => $cantidad
+                ],
+                [
+                    'id' => 'required|numeric',
+                    'id_producto' => 'required|numeric',
+                    'cantidad' => 'required|numeric|min:0',
+                ]
+            );
+
+            //Error al validar
+            if ($validar->fails()) {
+                throw new ValidationException();
+            }
+
+            // Buscamos
+            $pedido = Pedido::where('id', $id)->first();
+            // Buscamos
+            $producto = Producto::where('id', $id_producto)->first();
+
+            // Encontrado
+            if ($pedido && $producto) {
+                // completamos
+                $pedido->estado = "completado";
+                $pedido->save();
+                // aumentamos
+                $producto->cantidad =  $producto->cantidad + $cantidad;
+                $producto->save();
+                return;
+            }
+
+            // No encontrado
+            throw new Exception();
+
+            //Errores
+        } catch (ValidationException $e) {
+            // Validación
+            return response()->json([
+                'error' =>  'Error en la validación, error: ' . $e->getMessage()
+            ], 400);
+        } catch (QueryException $e) {
+            // Consulta
+            return response()->json([
+                'error' => 'Error en la consulta, error: ' . $e->getMessage()
+            ], 500);
+        } catch (\Exception $e) {
+            // Otro
+            return response()->json([
+                'error' => 'Error desconocido, error: ' . $e->getMessage()
+            ], 501);
+        }
     }
 }

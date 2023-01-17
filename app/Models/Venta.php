@@ -9,17 +9,13 @@ class Venta extends Model
 {
     use HasFactory;
 
-    // Tiene muchos detalles de venta
-    public function details()
-    {
-        return $this->hasMany(DetalleVenta::class);
-    }
+    protected $fillable = [
+        'fecha', 'id_usuario', 'total'
+    ];
 
-
-    //Pertenece al usuario
-    public function usuario()
+    // Tiene muchos detalles de pedidos
+    public function detalles()
     {
-        //Pertenece a
-        return $this->belongsTo(Usuario::class);
+        return $this->hasMany(DetalleVenta::class, 'id_venta');
     }
 }
